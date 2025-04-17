@@ -2,17 +2,48 @@
 //Send requests here:
 //http://localhost:8000/request.php
 
+/*
 //Test request: fail
 //http://localhost:8000/request.php?street=10102 Pokey Oaks St.&city=Townsville&state=CN&zip=99999
 
 //Test request: perfect match
-//http://localhost:8000/request.php?street=12696 HORSESHOE LN&city=NORTH PLATTE&state=NE&zip=69101
+http://localhost:8000/request.php?street=12696 HORSESHOE LN&city=NORTH PLATTE&state=NE&zip=69101
+
+//Test request: fuzzy match
+http://localhost:8000/request.php?street=12696 HORSESHOE LANE&city=NORTH PLATTE&state=NE&zip=69101
+
+//Test request: no-zip match
+http://localhost:8000/request.php?street=12696 HORSESHOE LN&city=NORTH PLATTE&state=NE
+
+//Test request: no-zip fuzzy match
+http://localhost:8000/request.php?street=12696 HOUSESHOE LN&city=NORTH PLATTE&state=NE
+*/
+
+function get_return_data($row)
+{
+    $lst = [];
+    array_push($lst, $row[COL_LOCATION_ID]);
+    array_push($lst, $row[COL_BUILDING]);
+    array_push($lst, $row[COL_SERVICE_AREA]);
+    array_push($lst, $row[COL_CONSTRUCTED]);
+    array_push($lst, $row[COL_NEEDS_CONTRUCTED]);
+    return json_encode($lst);
+}
+
+//Columns
+define("COL_X", 0);
+define("COL_Y", 1);
+define("COL_LOCATION_ID", 2);
+define("COL_STREET", 3);
+define("COL_CITY", 4);
+define("COL_STATE", 5);
+define("COL_ZIP", 6);
+define("COL_BUILDING", 7);
+define("COL_SERVICE_AREA", 8);
+define("COL_CONSTRUCTED", 9);
+define("COL_NEEDS_CONTRUCTED", 10);
 
 
-define("STREET", 3);
-define("CITY", 4);
-define("STATE", 5);
-define("ZIP", 6);
 define("ADR_NMB", 0);
 
 $username = "Guybrush";
@@ -60,8 +91,8 @@ $match_most_amt = 0;
 for ($i = 0; $i < $csv_len; $i++)
 {
     $row = $csv[$i];
-    $adr = explode(" ", $row[STREET]);
-    if (($street_nmb == $adr[ADR_NMB]) and ($zip == $row[ZIP]))
+    $adr = explode(" ", $row[COL_STREET]);
+    if (($street_nmb == $adr[ADR_NMB]) and ($zip == $row[COL_ZIP]))
     {
         $rest = implode(" ", array_slice($adr, 1));
         $dist = similar_text($street_rest, $rest, $percent);
@@ -77,7 +108,7 @@ if ($match_most > -1)
 {
     $match = $csv[$match_most];
     echo "Found match on zip";
-    return [true, json_encode($match)];
+    return [true, get_return_data($match)];
 }
 
 
@@ -87,8 +118,8 @@ $match_most_amt = 0;
 for ($i = 0; $i < $csv_len; $i++)
 {
     $row = $csv[$i];
-    $adr = explode(" ", $row[STREET]);
-    if (($street_nmb == $adr[ADR_NMB]) and (($city == $row[CITY]) and ($state == $row[STATE])))
+    $adr = explode(" ", $row[COL_STREET]);
+    if (($street_nmb == $adr[ADR_NMB]) and (($city == $row[COL_CITY]) and ($state == $row[COL_STATE])))
     {
         $rest = implode(" ", array_slice($adr, 1));
         $dist = similar_text($street_rest, $rest, $percent);
@@ -104,7 +135,7 @@ if ($match_most > -1)
 {
     $match = $csv[$match_most];
     echo "Found match on city and state";
-    return [true, json_encode($match)];
+    return [true, get_return_data($match)];
 }
 
 
