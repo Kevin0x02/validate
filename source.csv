@@ -1,4 +1,4 @@
-X,Y,location_id,address_primary,city,state,zip,building_type_code,Service Area,Constructed ,Needs Constructed
+X,Y,location_id,address_primary,city,state,zip,building_type_code,Service Area,Constructed,NeedsConstructed
 -100.74154586,41.02088702,1052783017,12601 SADDLE RD,NORTH PLATTE,NE,69101,R,RA1/2,,X
 -100.74048475,41.01855889,1052783023,12697 SADDLE RD,NORTH PLATTE,NE,69101,R,RA1/2,,X
 -100.73964067,41.01854889,1453023058,2045 BROWN RD,NORTH PLATTE,NE,69101,X,RA1/2,,X

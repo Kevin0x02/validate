@@ -1,48 +1,35 @@
 <?php
+require_once("query.php");
 //Send requests here:
 //http://localhost:8000/request.php
 
 /*
 //Test request: fail
-//http://localhost:8000/request.php?street=10102 Pokey Oaks St.&city=Townsville&state=CN&zip=99999
+http://localhost/valid//request.php?street=10102 Pokey Oaks St.&city=Townsville&state=CN&zip=99999
 
 //Test request: perfect match
-http://localhost:8000/request.php?street=12696 HORSESHOE LN&city=NORTH PLATTE&state=NE&zip=69101
+http://localhost/valid//request.php?street=12696 HORSESHOE LN&city=NORTH PLATTE&state=NE&zip=69101
 
 //Test request: fuzzy match
-http://localhost:8000/request.php?street=12696 HORSESHOE LANE&city=NORTH PLATTE&state=NE&zip=69101
+http://localhost/valid//request.php?street=12696 HORSESHOE LANE&city=NORTH PLATTE&state=NE&zip=69101
 
 //Test request: no-zip match
-http://localhost:8000/request.php?street=12696 HORSESHOE LN&city=NORTH PLATTE&state=NE
+http://localhost/valid//request.php?street=12696 HORSESHOE LN&city=NORTH PLATTE&state=NE
 
 //Test request: no-zip fuzzy match
-http://localhost:8000/request.php?street=12696 HOUSESHOE LN&city=NORTH PLATTE&state=NE
+http://localhost/valid//request.php?street=12696 HOUSESHOE LN&city=NORTH PLATTE&state=NE
 */
 
 function get_return_data($row)
 {
     $lst = [];
-    array_push($lst, $row[COL_LOCATION_ID]);
-    array_push($lst, $row[COL_BUILDING]);
-    array_push($lst, $row[COL_SERVICE_AREA]);
-    array_push($lst, $row[COL_CONSTRUCTED]);
-    array_push($lst, $row[COL_NEEDS_CONTRUCTED]);
+    array_push($lst, $row["location_id"]);
+    array_push($lst, $row["building_type_code"]);
+    array_push($lst, $row["Service Area"]);
+    array_push($lst, $row["Constructed"]);
+    array_push($lst, $row["NeedsConstructed"]);
     return json_encode($lst);
 }
-
-//Columns
-define("COL_X", 0);
-define("COL_Y", 1);
-define("COL_LOCATION_ID", 2);
-define("COL_STREET", 3);
-define("COL_CITY", 4);
-define("COL_STATE", 5);
-define("COL_ZIP", 6);
-define("COL_BUILDING", 7);
-define("COL_SERVICE_AREA", 8);
-define("COL_CONSTRUCTED", 9);
-define("COL_NEEDS_CONTRUCTED", 10);
-
 
 define("ADR_NMB", 0);
 
@@ -65,14 +52,8 @@ if ($_SERVER['PHP_AUTH_USER'] !== $username || $_SERVER['PHP_AUTH_PW'] !== $pass
     exit;
 }
 
-$file = fopen("source.csv", "r");
-$csv = array();
-while(($data = fgetcsv($file, 9999, ",")) !== FALSE)
-{
-    $csv[] = $data;
-}
-fclose($file);
 
+$db = get_all_rows();
 
 $street = $_GET["street"] ?? "";
 $city = $_GET["city"] ?? "";
@@ -81,61 +62,57 @@ $zip = $_GET["zip"] ?? "";
 
 $street_parts = explode(" ", $street);
 $street_nmb = $street_parts[0];
-$street_rest = implode(" ", array_slice($street_parts, 1));
+$street_rest = strtoupper(implode(" ", array_slice($street_parts, 1)));
 
-$csv_len = sizeof($csv);
+$match_req = 59;
 
-$match_most = -1;
+$match_most = null;
 $match_most_amt = 0;
 
-for ($i = 0; $i < $csv_len; $i++)
+foreach ($db as $row)
 {
-    $row = $csv[$i];
-    $adr = explode(" ", $row[COL_STREET]);
-    if (($street_nmb == $adr[ADR_NMB]) and ($zip == $row[COL_ZIP]))
+    $adr = explode(" ", $row["address_primary"]);
+    if (($street_nmb == $adr[ADR_NMB]) and ($zip == $row["zip"]))
     {
-        $rest = implode(" ", array_slice($adr, 1));
+        $rest = strtoupper(implode(" ", array_slice($adr, 1)));
         $dist = similar_text($street_rest, $rest, $percent);
-        if ($percent > $match_most_amt)
+        if (($percent > $match_req) and ($percent > $match_most_amt))
         {
-            $match_most = $i;
+            $match_most = $row;
             $match_most_amt = $percent;
             if ($percent >= 100) {break;}
         }
     }
 }
-if ($match_most > -1)
+if (!empty($match_most))
 {
-    $match = $csv[$match_most];
     echo "Found match on zip";
-    return [true, get_return_data($match)];
+    return [true, get_return_data($match_most)];
 }
 
 
-$match_most = -1;
+$match_most = null;
 $match_most_amt = 0;
 
-for ($i = 0; $i < $csv_len; $i++)
+foreach ($db as $row)
 {
-    $row = $csv[$i];
-    $adr = explode(" ", $row[COL_STREET]);
-    if (($street_nmb == $adr[ADR_NMB]) and (($city == $row[COL_CITY]) and ($state == $row[COL_STATE])))
+    $adr = explode(" ", $row["address_primary"]);
+    if (($street_nmb == $adr[ADR_NMB]) and (($city == $row["city"]) and ($state == $row["state"])))
     {
-        $rest = implode(" ", array_slice($adr, 1));
+        $rest = strtoupper(implode(" ", array_slice($adr, 1)));
         $dist = similar_text($street_rest, $rest, $percent);
-        if ($percent > $match_most_amt)
+        if (($percent > $match_req) and ($percent > $match_most_amt))
         {
-            $match_most = $i;
+            $match_most = $row;
             $match_most_amt = $percent;
             if ($percent >= 100) {break;}
         }
     }
 }
-if ($match_most > -1)
+if (!empty($match_most))
 {
-    $match = $csv[$match_most];
     echo "Found match on city and state";
-    return [true, get_return_data($match)];
+    return [true, get_return_data($match_most)];
 }
 
 
