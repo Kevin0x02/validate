@@ -1,25 +1,59 @@
 <?php
-function get_all_rows() 
+function get_rows_by_zip($street_nmb, $zip)
 {
     $host = 'localhost';
     $user = 'root';
     $pass = ''; 
     $db = 'address';
-    $tableName = 'adr';
-
+    $table_name = 'adr';
     $conn = new mysqli($host, $user, $pass, $db);
 
-    $rows = [];
-    $result = $conn->query("SELECT * FROM `$tableName`");
+    $query = $conn->prepare("
+    SELECT *
+    FROM $table_name
+    WHERE zip = ?
+    AND CAST(SUBSTRING_INDEX(address_primary, ' ', 1) AS UNSIGNED) = ?
+    ");
 
-    if (($result) and ($result->num_rows > 0))
+    $query->bind_param("si", $zip, $street_nmb);
+    $query->execute();
+
+    $result = $query->get_result();
+
+    $rows = [];
+    while ($row = $result->fetch_assoc()) 
     {
-        while ($row = $result->fetch_assoc()) 
-        {
-            $rows[] = $row;
-        }
+        $rows[] = $row;
     }
-    $conn->close();
+    return $rows;
+}
+
+function get_rows_by_citystate($city, $state)
+{
+    $host = 'localhost';
+    $user = 'root';
+    $pass = ''; 
+    $db = 'address';
+    $table_name = 'adr';
+    $conn = new mysqli($host, $user, $pass, $db);
+
+    $query = $conn->prepare("
+    SELECT *
+    FROM $table_name
+    WHERE city = ?
+    AND state = ?
+    ");
+
+    $query->bind_param("ss", $city, $state);
+    $query->execute();
+
+    $result = $query->get_result();
+
+    $rows = [];
+    while ($row = $result->fetch_assoc()) 
+    {
+        $rows[] = $row;
+    }
     return $rows;
 }
 ?>

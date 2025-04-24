@@ -31,8 +31,6 @@ function get_return_data($row)
     return json_encode($lst);
 }
 
-define("ADR_NMB", 0);
-
 $username = "Guybrush";
 $password = "MightyPirate";
 
@@ -52,8 +50,31 @@ if ($_SERVER['PHP_AUTH_USER'] !== $username || $_SERVER['PHP_AUTH_PW'] !== $pass
     exit;
 }
 
-
-$db = get_all_rows();
+function check_rows($rows, $street_rest, $match_req, $match_most_amt, $type)
+{
+    if (!empty($rows))
+    {
+        foreach ($rows as $row)
+        {
+            $adr = explode(" ", $row["address_primary"]);
+            $rest = strtoupper(implode(" ", array_slice($adr, 1)));
+            similar_text($street_rest, $rest, $percent);
+            if (($percent > $match_req) and ($percent > $match_most_amt))
+            {
+                $match_most = $row;
+                $match_most_amt = $percent;
+                if ($percent >= 100) {break;}
+            }
+        }
+        if (!empty($match_most))
+        {
+            echo "Found match on $type\n";
+            echo "Match percent: $match_most_amt%";
+            return [true, get_return_data($match_most)];
+        }
+    }
+    return [false, false];
+}
 
 $street = $_GET["street"] ?? "";
 $city = $_GET["city"] ?? "";
@@ -69,51 +90,13 @@ $match_req = 59;
 $match_most = null;
 $match_most_amt = 0;
 
-foreach ($db as $row)
-{
-    $adr = explode(" ", $row["address_primary"]);
-    if (($street_nmb == $adr[ADR_NMB]) and ($zip == $row["zip"]))
-    {
-        $rest = strtoupper(implode(" ", array_slice($adr, 1)));
-        $dist = similar_text($street_rest, $rest, $percent);
-        if (($percent > $match_req) and ($percent > $match_most_amt))
-        {
-            $match_most = $row;
-            $match_most_amt = $percent;
-            if ($percent >= 100) {break;}
-        }
-    }
-}
-if (!empty($match_most))
-{
-    echo "Found match on zip";
-    return [true, get_return_data($match_most)];
-}
+$rows = get_rows_by_zip($street_nmb, $zip);
+$result = check_rows($rows, $street_rest, $match_req, $match_most_amt, "zip");
+if ($result[0]) {return $result[1];}
 
-
-$match_most = null;
-$match_most_amt = 0;
-
-foreach ($db as $row)
-{
-    $adr = explode(" ", $row["address_primary"]);
-    if (($street_nmb == $adr[ADR_NMB]) and (($city == $row["city"]) and ($state == $row["state"])))
-    {
-        $rest = strtoupper(implode(" ", array_slice($adr, 1)));
-        $dist = similar_text($street_rest, $rest, $percent);
-        if (($percent > $match_req) and ($percent > $match_most_amt))
-        {
-            $match_most = $row;
-            $match_most_amt = $percent;
-            if ($percent >= 100) {break;}
-        }
-    }
-}
-if (!empty($match_most))
-{
-    echo "Found match on city and state";
-    return [true, get_return_data($match_most)];
-}
+$rows = get_rows_by_citystate($city, $state);
+$result = check_rows($rows, $street_rest, $match_req, $match_most_amt, "city/state");
+if ($result[0]) {return $result[1];}
 
 
 echo "No match found.\n";
@@ -121,7 +104,7 @@ echo "Street: " . $street . "\n";
 echo "City: " . $city . "\n";
 echo "State: " . $state . "\n";
 echo "Zip: " . $zip . "\n";
-return [false, json_encode([])];
+return false;
 
 
 ?>
