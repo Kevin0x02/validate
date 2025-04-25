@@ -94,7 +94,7 @@ $rows = get_rows_by_zip($street_nmb, $zip);
 $result = check_rows($rows, $street_rest, $match_req, $match_most_amt, "zip");
 if ($result[0]) {return $result[1];}
 
-$rows = get_rows_by_citystate($city, $state);
+$rows = get_rows_by_citystate($street_nmb, $city, $state);
 $result = check_rows($rows, $street_rest, $match_req, $match_most_amt, "city/state");
 if ($result[0]) {return $result[1];}
 
