@@ -1,7 +1,5 @@
 <?php
 require_once("query.php");
-//Send requests here:
-//http://localhost:8000/request.php
 
 /*
 //Test request: fail
@@ -81,8 +79,34 @@ $city = $_GET["city"] ?? "";
 $state = $_GET["state"] ?? "";
 $zip = $_GET["zip"] ?? "";
 
+if (strlen($street) < 3)
+{
+    echo "No match found.\n";
+    echo "Street name is too short.\n";
+    return false;
+}
+
 $street_parts = explode(" ", $street);
+$street_len = sizeof($street_parts);
+if ($street_len < 2)
+{
+    echo "No match found.\n";
+    echo "Not enough street information.\n";
+    return false;
+}
+for ($i = 0; $i < $street_len; $i++)
+{
+    if (strlen($street_parts[$i]) < 1)
+    {
+        echo "No match found.";
+        echo "Street information is invalid.";
+        return false;
+    }
+}
 $street_nmb = $street_parts[0];
+
+
+
 $street_rest = strtoupper(implode(" ", array_slice($street_parts, 1)));
 
 $match_req = 59;
